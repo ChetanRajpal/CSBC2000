@@ -43,6 +43,7 @@ class Blockchain {
     constructor() {
         this.chain = [];
         this.pendingTransactions = [];
+		this.difficulty = 3;
         this.addBlock('0');
     }
 
@@ -60,6 +61,8 @@ class Blockchain {
         let index = this.chain.length;
         let prevHash = this.chain.length !== 0 ? this.chain[this.chain.length - 1].hash : '0';
         let hash = this.getHash(prevHash, this.pendingTransactions, nonce);
+		console.log(hash);
+		console.log(nonce);
         let block = new Block(index, this.pendingTransactions, prevHash, nonce, hash);
 
         // reset pending txs
@@ -82,8 +85,17 @@ class Blockchain {
     /**
      * Find nonce that satisfies our proof of work.
      */
-    proofOfWork() {
+    proofOfWork(difficulty, pendingTransactions) {
         //TODO
+		let nonce = 0;
+        let prevHash = this.chain.length !== 0 ? this.chain[this.chain.length - 1].hash : '0';
+        let hash = this.getHash(prevHash,pendingTransactions,nonce).toString();
+        while (hash.substring(0, difficulty) !== Array(difficulty + 1).join('0')) {
+            nonce++;
+            hash = this.getHash(prevHash,pendingTransactions,nonce);
+        }
+        return nonce;
+	
     }
 
     /**
@@ -92,8 +104,8 @@ class Blockchain {
     mine() {
         let tx_id_list = [];
         this.pendingTransactions.forEach((tx) => tx_id_list.push(tx.tx_id));
-        let nonce = this.proofOfWork();
-        this.addBlock('0');
+        let nonce = this.proofOfWork(this.difficulty,this.pendingTransactions);
+        this.addBlock(nonce);
     }
 
 
@@ -107,13 +119,16 @@ class Blockchain {
             this.chain[i].transactions.forEach((tx) => tx_id_list.push(tx.tx_id));
 
             if(i == 0 && this.chain[i].hash !==this.getHash('0',[],'0')){
+				console.log("first");
                 return false;
             }
             if(i > 0 && this.chain[i].hash !== this.getHash(this.chain[i-1].hash, this.chain[i].transactions, '0')){
-                return false;
+                console.log("second");
+				return false;
             }
             if(i > 0 && this.chain[i].prevHash !== this.chain[i-1].hash){
-                return false;
+                console.log("three");
+				return false;
             }
         }
         return true;
@@ -138,10 +153,10 @@ function simulateChain(blockchain, numTxs, numBlocks) {
 }
 
 const BChain = new Blockchain();
-simulateChain(BChain, 5, 3);
+simulateChain(BChain, 5, 12);
 
 module.exports = Blockchain;
 
 // uncomment these to run a simulation
-// console.dir(BChain,{depth:null});
-// console.log("******** Validity of this blockchain: ", BChain.chainIsValid());
+console.dir(BChain,{depth:null});
+console.log("******** Validity of this blockchain: ", BChain.chainIsValid());
